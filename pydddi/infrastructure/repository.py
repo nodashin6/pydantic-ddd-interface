@@ -37,6 +37,9 @@ class IReadSchema(BaseModel):
     """
     Schema for read operations.
     This can be used to specify fields that can be retrieved.
+    Schemas should focus on data structure definition only.
+
+    Note: Each ReadSchema should have a corresponding Entity (1:1 relationship).
     """
 
     pass
@@ -46,6 +49,10 @@ class IReadAggregateSchema(BaseModel):
     """
     Schema for read aggregate operations.
     This can be used to specify fields that can be aggregated or summarized.
+    Schemas should focus on data structure definition only.
+
+    Note: Each ReadAggregateSchema should have a corresponding Model (1:1 relationship).
+    The schema may be built from multiple database tables, but represents one domain model.
     """
 
     pass
@@ -171,6 +178,31 @@ class IReadRepository(ABC, Generic[TEntity, TReadSchema]):
         """
         raise NotImplementedError
 
+    def _schema_to_entity(self, schema: TReadSchema) -> TEntity:
+        """
+        Convert a read schema to an entity.
+        This method is recommended to be implemented by concrete repositories to provide
+        the conversion logic from schema to entity.
+
+        Args:
+            schema: The read schema to convert
+
+        Returns:
+            An entity instance converted from the schema
+
+        Note:
+            This method is called internally by read operations.
+            The typical flow: DB → ReadSchema → Entity → Domain Service
+
+            This method is not abstract to maintain backward compatibility,
+            but it's strongly recommended to implement it for consistency
+            across different repository implementations.
+        """
+        raise NotImplementedError(
+            "Repository should implement _schema_to_entity method for consistency. "
+            "This method provides a standardized way to convert schemas to entities."
+        )
+
 
 class IReadAggregateRepository(ABC, Generic[TModel, TReadAggregateSchema]):
     """
@@ -213,3 +245,28 @@ class IReadAggregateRepository(ABC, Generic[TModel, TReadAggregateSchema]):
             List of models with relationships and aggregated data
         """
         raise NotImplementedError
+
+    def _schema_to_model(self, schema: TReadAggregateSchema) -> TModel:
+        """
+        Convert a read aggregate schema to a model.
+        This method is recommended to be implemented by concrete repositories to provide
+        the conversion logic from schema to model.
+
+        Args:
+            schema: The read aggregate schema to convert
+
+        Returns:
+            A model instance converted from the schema
+
+        Note:
+            This method is called internally by read operations.
+            The typical flow: DB → ReadAggregateSchema → Model → Domain Service
+
+            This method is not abstract to maintain backward compatibility,
+            but it's strongly recommended to implement it for consistency
+            across different repository implementations.
+        """
+        raise NotImplementedError(
+            "Repository should implement _schema_to_model method for consistency. "
+            "This method provides a standardized way to convert schemas to models."
+        )

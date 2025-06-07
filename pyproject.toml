@@ -1,6 +1,6 @@
 [tool.poetry]
-name = "pydantic-ddd-interface"
-version = "0.1.1"
+name = "pydantic_ddd_interface"
+version = "0.1.2"
 description = "A Python library providing interface definitions for Domain-Driven Design (DDD) patterns using Pydantic for type safety and validation."
 authors = ["nodashin <nodashin.jpn@gmail.com>"]
 license = "MIT"
