@@ -102,18 +102,26 @@ from pydddi import IEntity, IUseCase, ICrudRepository
 ```python
 from pydddi import IEntity, IModel
 
-class UserId(IModel):
-    """Strongly-typed user identifier"""
-    value: int
-
-class User(IEntity):
-    """User aggregate root"""
-    id: UserId
+class User(IEntity[int]):
+    """Lightweight user entity - just identity and core attributes"""
+    id: int
     name: str
     email: str
     
-    def get_id(self) -> UserId:
+    def get_id(self) -> int:
         return self.id
+
+class UserProfile(IModel):
+    """Heavy model with relationships - used in domain logic processing"""
+    user: User
+    posts: List["Post"]
+    followers: List["User"]
+    settings: "UserSettings"
+    activity_history: List["ActivityLog"]
+    
+    # Domain logic methods can access all related data
+    def get_total_engagement(self) -> int:
+        return sum(post.likes + post.comments for post in self.posts)
 ```
 
 ### ⚙️ Application Layer  
@@ -129,7 +137,7 @@ class CreateUserCommand(IUseCaseCommand):
 
 class CreateUserResult(IUseCaseResult):
     """Result of user creation"""
-    user_id: UserId
+    user_id: int
     success: bool
     message: str
 
@@ -166,10 +174,10 @@ class UserUpdateSchema(IUpdateSchema):
 <summary>🔍 <strong>Click to see repository implementations</strong></summary>
 
 ```python
-# 🔨 CRUD Repository - for full CRUD operations on entities
+# 🔨 CRUD Repository - for lightweight entity operations
 class UserCrudRepository(ICrudRepository[User, UserCreateSchema, User, UserUpdateSchema]):
     async def create(self, schema: UserCreateSchema) -> User:
-        """Create a new user entity"""
+        """Create a new user entity (lightweight)"""
         pass
     
     async def read(self, id: int) -> User:
@@ -178,7 +186,7 @@ class UserCrudRepository(ICrudRepository[User, UserCreateSchema, User, UserUpdat
     
     # ... other CRUD methods
 
-# 📖 Read Repository - for simple read operations on entities  
+# 📖 Read Repository - for simple read operations on lightweight entities  
 class UserReadRepository(IReadRepository[User, User]):
     async def read(self, id: int) -> User:
         """Get user entity without relationships"""
@@ -188,14 +196,14 @@ class UserReadRepository(IReadRepository[User, User]):
         """List user entities (lightweight)"""
         pass
 
-# 🔗 Read Aggregate Repository - for complex reads with relationships
-class UserAggregateRepository(IReadAggregateRepository[UserWithPosts, User]):
-    async def read(self, id: int) -> UserWithPosts:
-        """Get user with all related data (posts, comments, etc.)"""
+# 🔗 Read Aggregate Repository - for heavy models with full relationships
+class UserProfileRepository(IReadAggregateRepository[UserProfile, User]):
+    async def read(self, id: int) -> UserProfile:
+        """Get heavy UserProfile with all related data (posts, followers, etc.)"""
         pass
     
-    async def list(self, limit: int = None, **filters) -> List[UserWithPosts]:
-        """List users with full relationship data"""
+    async def list(self, limit: int = None, **filters) -> List[UserProfile]:
+        """List UserProfile with full relationship data for domain processing"""
         pass
 ```
 
@@ -307,11 +315,11 @@ graph TB
 
 ### 🎯 Repository Usage Guide
 
-| Repository Type | Use Case | Returns | Example |
-|----------------|----------|---------|---------|
-| **ICrudRepository** | Full entity lifecycle | `TEntity` | User CRUD operations |
-| **IReadRepository** | Simple entity queries | `TEntity` | User profile lookup |
-| **IReadAggregateRepository** | Complex queries with joins | `TModel` | User dashboard with posts |
+| Repository Type | Use Case | Returns | Example | Weight |
+|----------------|----------|---------|---------|--------|
+| **ICrudRepository** | Lightweight entity lifecycle | `IEntity` | User CRUD operations | 🪶 Light |
+| **IReadRepository** | Simple entity queries | `IEntity` | User identity lookup | 🪶 Light |
+| **IReadAggregateRepository** | Heavy models with relationships | `IModel` | UserProfile with posts/followers | 🏋️ Heavy |
 
 ---
 
@@ -342,7 +350,6 @@ poetry run pytest
 
 # Format code
 poetry run black .
-poetry run isort .
 ```
 
 ---
