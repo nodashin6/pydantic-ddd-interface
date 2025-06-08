@@ -1,0 +1,117 @@
+name: Comprehensive CI
+
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+
+jobs:
+  lint-and-format:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.12"
+    
+    - name: Install Poetry
+      uses: snok/install-poetry@v1
+      with:
+        version: latest
+        virtualenvs-create: true
+        virtualenvs-in-project: true
+    
+    - name: Install dependencies
+      run: poetry install --no-interaction
+    
+    - name: Check code formatting with black
+      run: poetry run black --check --diff .
+    
+    - name: Type checking with mypy
+      run: poetry run mypy pydddi/
+      continue-on-error: true  # mypyエラーは警告として扱う
+
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: ["3.12"]
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: Install Poetry
+      uses: snok/install-poetry@v1
+      with:
+        version: latest
+        virtualenvs-create: true
+        virtualenvs-in-project: true
+    
+    - name: Install dependencies
+      run: poetry install --no-interaction
+    
+    - name: Run tests with coverage
+      run: |
+        poetry run pytest --cov=pydddi --cov-report=xml --cov-report=term-missing
+    
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v4
+      if: matrix.os == 'ubuntu-latest'
+      with:
+        file: ./coverage.xml
+        fail_ci_if_error: false
+
+  build-and-publish-test:
+    runs-on: ubuntu-latest
+    needs: [lint-and-format, test]
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.12"
+    
+    - name: Install Poetry
+      uses: snok/install-poetry@v1
+      with:
+        version: latest
+    
+    - name: Install dependencies
+      run: poetry install --no-interaction
+    
+    - name: Build package
+      run: poetry build
+    
+    - name: Check package metadata
+      run: |
+        poetry check
+        pip install twine
+        twine check dist/*
+    
+    - name: Test installation from built package
+      run: |
+        pip install dist/*.whl
+        python -c "
+import pydddi
+from pydddi import IEntity, IModel, IUseCase, ICrudRepository
+print('✅ Package installed and imports work correctly')
+print(f'📦 Package version: {pydddi.__version__ if hasattr(pydddi, \"__version__\") else \"unknown\"}')
+"
+    
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: dist-${{ github.sha }}
+        path: dist/
+        retention-days: 30
