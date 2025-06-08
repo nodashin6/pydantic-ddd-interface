@@ -72,6 +72,10 @@ jobs:
       run: |
         echo "✅ Testing package installation..."
         WHEEL_FILE=$(find dist -name "*.whl" | head -1)
+        if [ -z "$WHEEL_FILE" ]; then
+          echo "❌ No wheel file found in the 'dist' directory. Ensure the build step generates a .whl file."
+          exit 1
+        fi
         pip install "$WHEEL_FILE"
         python -c "
         import sys
