@@ -2,9 +2,9 @@ name: Comprehensive CI
 
 on:
   pull_request:
-    branches: [ main, feature/#8-fix-windows-workflow ]
-  push:
     branches: [ main ]
+  push:
+    branches: [ main, feature/#8-fix-windows-workflow ]
 
 jobs:
   lint-and-format:
