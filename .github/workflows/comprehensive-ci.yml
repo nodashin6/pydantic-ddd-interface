@@ -142,6 +142,10 @@ jobs:
       run: |
         # Find the wheel file and install it
         WHEEL_FILE=$(find dist -name "*.whl" | head -1)
+        if [ -z "$WHEEL_FILE" ]; then
+          echo "❌ No wheel file found in the 'dist' directory. Ensure the package was built correctly."
+          exit 1
+        fi
         pip install "$WHEEL_FILE"
         python -c "
         import pydddi
