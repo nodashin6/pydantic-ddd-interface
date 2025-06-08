@@ -23,6 +23,11 @@ jobs:
         version: latest
         virtualenvs-create: true
         virtualenvs-in-project: true
+        installer-parallel: true
+    
+    - name: Add Poetry to PATH (Windows)
+      if: runner.os == 'Windows'
+      run: echo "$HOME/.local/bin" >> $GITHUB_PATH
     
     - name: Install dependencies
       run: poetry install --no-interaction
@@ -56,8 +61,35 @@ jobs:
         version: latest
         virtualenvs-create: true
         virtualenvs-in-project: true
+        installer-parallel: true
+    
+    - name: Add Poetry to PATH (Windows)
+      if: runner.os == 'Windows'
+      shell: bash
+      run: echo "$HOME/.local/bin" >> $GITHUB_PATH
+    
+    - name: Add Poetry to PATH (Windows PowerShell)
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: |
+        $poetryPath = "$env:USERPROFILE\AppData\Roaming\Python\Scripts"
+        echo $poetryPath >> $env:GITHUB_PATH
+    
+    - name: Verify Poetry installation
+      run: poetry --version
+    
+    - name: Load cached venv
+      id: cached-poetry-dependencies
+      uses: actions/cache@v3
+      with:
+        path: .venv
+        key: venv-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}
     
     - name: Install dependencies
+      if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+      run: poetry install --no-interaction --no-root
+    
+    - name: Install project
       run: poetry install --no-interaction
     
     - name: Run tests with coverage
