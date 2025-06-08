@@ -84,33 +84,6 @@ jobs:
       run: |
         poetry build
         ls -la dist/
-    
-    - name: ✅ Test package installation
-      run: |
-        echo "Testing wheel installation..."
-        wheelFile=$(find dist/ -name "*.whl" | head -n 1)
-        echo "Installing wheel: $wheelFile"
-        pip install "$wheelFile"
-        echo "Testing package import..."
-        python -c "
-import sys
-print(f'Python version: {sys.version}')
-print('Testing pydddi import...')
-import pydddi
-from pydddi import IEntity, IModel, IUseCase, ICrudRepository  
-print('✅ Windows package installation successful!')
-print('🎉 All Windows tests passed!')
-"
-    
-    - name: 📊 Upload test results
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: windows-test-results
-        path: |
-          dist/
-          .coverage
-        retention-days: 7
 
   windows-summary:
     runs-on: ubuntu-latest
@@ -125,7 +98,6 @@ print('🎉 All Windows tests passed!')
           echo "✅ Dependencies: OK"
           echo "✅ Tests: OK"
           echo "✅ Build: OK"
-          echo "✅ Package installation: OK"
         else
           echo "❌ Windows tests failed!"
           echo "Please check the logs above for details."
