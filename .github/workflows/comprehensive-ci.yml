@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [ main ]
   push:
-    branches: [ main, feature/#8-fix-windows-workflow ]
+    branches: [ main ]
 
 jobs:
   lint-and-format:
@@ -74,12 +74,19 @@ jobs:
     - name: Verify Poetry installation
       run: poetry --version
     
+    - name: Get Poetry cache dir
+      id: poetry-cache
+      run: |
+        echo "dir=$(poetry config cache-dir)" >> $GITHUB_OUTPUT
+    
     - name: Load cached venv
       id: cached-poetry-dependencies
       uses: actions/cache@v3
       with:
-        path: ~/.cache/pypoetry
+        path: ${{ steps.poetry-cache.outputs.dir }}
         key: poetry-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}
+        restore-keys: |
+          poetry-${{ runner.os }}-${{ matrix.python-version }}-
     
     - name: Install dependencies
       if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
