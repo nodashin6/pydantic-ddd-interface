@@ -16,6 +16,9 @@ jobs:
   windows-test:
     runs-on: windows-latest
     timeout-minutes: 30
+    defaults:
+      run:
+        shell: bash
     
     steps:
     - name: 🔽 Checkout code
@@ -27,7 +30,7 @@ jobs:
         python-version: "3.12"
     
     - name: 🔧 Install Poetry (Windows specific)
-      uses: snok/install-poetry@v2
+      uses: snok/install-poetry@v1
       with:
         version: latest
         virtualenvs-create: true
@@ -38,16 +41,13 @@ jobs:
       run: |
         poetry --version
         poetry config --list
-      shell: pwsh
 
     - name: 🔧 Ensure Poetry in PATH (Windows fallback)
       if: failure()
       run: |
-        $poetryPath = "$env:APPDATA\Python\Scripts"
-        echo "Adding Poetry path: $poetryPath"
-        echo "$poetryPath" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-        echo "Updated PATH: $env:PATH"
-      shell: pwsh
+        echo "Adding Poetry to PATH..."
+        echo "$HOME/.local/bin" >> $GITHUB_PATH
+        echo "Updated PATH"
     
     - name: 📦 Cache dependencies
       uses: actions/cache@v3
@@ -60,53 +60,47 @@ jobs:
     
     - name: 🔧 Install dependencies
       run: |
-        echo "Current PATH: $env:PATH"
+        echo "Current PATH: $PATH"
         echo "Poetry location:"
-        Get-Command poetry
+        which poetry
         echo "Installing dependencies..."
         poetry install --no-interaction --verbose
-      shell: pwsh
     
     - name: 🧪 Run tests
       run: |
         poetry run pytest -v --tb=short
-      shell: pwsh
     
     - name: 🎨 Check code formatting
       run: |
         poetry run black --check --diff .
-      shell: pwsh
       continue-on-error: true
     
     - name: 🔍 Type checking
       run: |
         poetry run mypy pydddi/
-      shell: pwsh
       continue-on-error: true
     
     - name: 📦 Test build
       run: |
         poetry build
-        dir dist\
-      shell: pwsh
+        ls -la dist/
     
     - name: ✅ Test package installation
       run: |
         echo "Testing wheel installation..."
-        $wheelFile = Get-ChildItem dist\*.whl | Select-Object -First 1
-        echo "Installing wheel: $($wheelFile.Name)"
-        pip install $wheelFile.FullName
+        wheelFile=$(find dist/ -name "*.whl" | head -n 1)
+        echo "Installing wheel: $wheelFile"
+        pip install "$wheelFile"
         echo "Testing package import..."
         python -c "
-        import sys
-        print(f'Python version: {sys.version}')
-        print('Testing pydddi import...')
-        import pydddi
-        from pydddi import IEntity, IModel, IUseCase, ICrudRepository  
-        print('✅ Windows package installation successful!')
-        print('🎉 All Windows tests passed!')
-        "
-      shell: pwsh
+import sys
+print(f'Python version: {sys.version}')
+print('Testing pydddi import...')
+import pydddi
+from pydddi import IEntity, IModel, IUseCase, ICrudRepository  
+print('✅ Windows package installation successful!')
+print('🎉 All Windows tests passed!')
+"
     
     - name: 📊 Upload test results
       uses: actions/upload-artifact@v4
