@@ -1,8 +1,8 @@
 from abc import ABC, abstractmethod
-from typing import TypeVar, Generic, Optional, Hashable, List
+from typing import TypeVar, Generic, Optional, Hashable
 from pydantic import BaseModel
 
-from ..domain.entity import IEntity, TEntityId
+from ..domain.entity import IEntity
 from ..domain.model import IModel
 
 
@@ -127,11 +127,16 @@ class ICrudRepository(
         raise NotImplementedError
 
     @abstractmethod
-    async def list(
+    async def select(
         self, limit: Optional[int] = None, offset: Optional[int] = None, **filters
-    ) -> List[TEntity]:
+    ) -> list[TEntity]:
         """
-        List records with optional pagination and filtering.
+        Select multiple records with optional pagination and filtering.
+
+        Args:
+            limit: Maximum number of records to return. If None, returns all matching records.
+            offset: Number of records to skip before returning results.
+            **filters: Additional filtering criteria.
         """
         raise NotImplementedError
 
@@ -167,11 +172,16 @@ class IReadRepository(ABC, Generic[TEntity, TReadSchema]):
         raise NotImplementedError
 
     @abstractmethod
-    async def list(
+    async def select(
         self, limit: Optional[int] = None, offset: Optional[int] = None, **filters
-    ) -> List[TEntity]:
+    ) -> list[TEntity]:
         """
-        List entities with optional pagination and filtering.
+        Select multiple entities with optional pagination and filtering.
+
+        Args:
+            limit: Maximum number of entities to return. If None, returns all matching entities.
+            offset: Number of entities to skip before returning results.
+            **filters: Additional filtering criteria.
 
         Returns:
             List of entities without relationships
@@ -235,11 +245,16 @@ class IReadAggregateRepository(ABC, Generic[TModel, TReadAggregateSchema]):
         raise NotImplementedError
 
     @abstractmethod
-    async def list(
+    async def select(
         self, limit: Optional[int] = None, offset: Optional[int] = None, **filters
-    ) -> List[TModel]:
+    ) -> list[TModel]:
         """
-        List aggregate models with optional pagination and filtering.
+        Select multiple aggregate models with optional pagination and filtering.
+
+        Args:
+            limit: Maximum number of models to return. If None, returns all matching models.
+            offset: Number of models to skip before returning results.
+            **filters: Additional filtering criteria.
 
         Returns:
             List of models with relationships and aggregated data
