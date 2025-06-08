@@ -1,13 +1,20 @@
-[tool.poetry]
+[project]
 name = "pydantic_ddd_interface"
 version = "0.2.0"
 description = "A Python library providing interface definitions for Domain-Driven Design (DDD) patterns using Pydantic for type safety and validation."
-authors = ["nodashin <nodashin.jpn@gmail.com>"]
+authors = [
+    { name="nodashin", email="nodashin.jpn@gmail.com" }
+]
 license = "MIT"
 readme = "README.md"
 repository = "https://github.com/nodashin6/pydantic-ddd-interface"
-packages = [{include = "pydddi"}]
+requires-python = ">=3.12"
 keywords = ["ddd", "domain-driven-design", "pydantic", "architecture", "interface"]
+dynamic = ["dependencies", "classifiers"]
+
+[tool.poetry]
+package-mode = true
+packages = [{ include = "pydddi" }]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
@@ -18,7 +25,6 @@ classifiers = [
 ]
 
 [tool.poetry.dependencies]
-python = "^3.12"
 pydantic = "^2.11.5"
 
 [tool.poetry.group.dev.dependencies]
@@ -28,7 +34,7 @@ black = "^25.1.0"
 mypy = "^1.0.0"
 
 [build-system]
-requires = ["poetry-core>=1.0.0"]
+requires = ["poetry-core>=2.1.0"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.mypy]

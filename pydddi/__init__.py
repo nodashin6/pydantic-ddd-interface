@@ -5,7 +5,9 @@ A Python library providing interface definitions for Domain-Driven Design (DDD)
 patterns using Pydantic for type safety and validation.
 """
 
-__version__ = "0.1.0"
+from packaging.version import parse
+
+__version__ = parse("0.2.0")
 
 # Domain exports
 from .domain.entity import IEntity
