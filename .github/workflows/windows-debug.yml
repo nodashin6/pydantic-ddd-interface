@@ -1,0 +1,108 @@
+name: Windows Debug Test
+
+on:
+  push:
+    branches: [ feature/#8-fix-windows-workflow ]
+
+jobs:
+  windows-debug:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    
+    steps:
+    - name: 🔽 Checkout
+      uses: actions/checkout@v4
+    
+    - name: 🐍 Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.12"
+    
+    - name: 📋 Environment Info
+      run: |
+        echo "=== Environment Information ==="
+        python --version
+        pip --version
+        echo "PATH: $env:PATH"
+        echo "USERPROFILE: $env:USERPROFILE"
+        echo "HOME: $env:HOME"
+        Get-Location
+      shell: pwsh
+    
+    - name: 🔧 Try Poetry Installation Method 1 (pip)
+      id: poetry-pip
+      run: |
+        try {
+          pip install poetry
+          poetry --version
+          echo "poetry-pip-success=true" >> $env:GITHUB_OUTPUT
+        } catch {
+          echo "poetry-pip-success=false" >> $env:GITHUB_OUTPUT
+          echo "Method 1 failed: $_"
+        }
+      shell: pwsh
+      continue-on-error: true
+    
+    - name: 🔧 Try Poetry Installation Method 2 (official installer)
+      id: poetry-official
+      if: steps.poetry-pip.outputs.poetry-pip-success != 'true'
+      run: |
+        try {
+          (Invoke-WebRequest -Uri https://install.python-poetry.org -UseBasicParsing).Content | python -
+          $env:PATH += ";$env:USERPROFILE\AppData\Roaming\Python\Scripts"
+          poetry --version
+          echo "poetry-official-success=true" >> $env:GITHUB_OUTPUT
+        } catch {
+          echo "poetry-official-success=false" >> $env:GITHUB_OUTPUT
+          echo "Method 2 failed: $_"
+        }
+      shell: pwsh
+      continue-on-error: true
+    
+    - name: 🔧 Try Poetry Installation Method 3 (chocolatey)
+      id: poetry-choco
+      if: steps.poetry-pip.outputs.poetry-pip-success != 'true' && steps.poetry-official.outputs.poetry-official-success != 'true'
+      run: |
+        try {
+          choco install poetry -y
+          poetry --version
+          echo "poetry-choco-success=true" >> $env:GITHUB_OUTPUT
+        } catch {
+          echo "poetry-choco-success=false" >> $env:GITHUB_OUTPUT
+          echo "Method 3 failed: $_"
+        }
+      shell: pwsh
+      continue-on-error: true
+    
+    - name: 📦 Configure and Install
+      if: steps.poetry-pip.outputs.poetry-pip-success == 'true' || steps.poetry-official.outputs.poetry-official-success == 'true' || steps.poetry-choco.outputs.poetry-choco-success == 'true'
+      run: |
+        poetry config virtualenvs.create true
+        poetry config virtualenvs.in-project true
+        poetry install --no-interaction
+      shell: pwsh
+    
+    - name: 🧪 Run Basic Test
+      if: steps.poetry-pip.outputs.poetry-pip-success == 'true' || steps.poetry-official.outputs.poetry-official-success == 'true' || steps.poetry-choco.outputs.poetry-choco-success == 'true'
+      run: |
+        poetry run python -c "import pydddi; print('✅ Import successful!')"
+        poetry run pytest tests/test_basic.py -v
+      shell: pwsh
+    
+    - name: 📊 Summary
+      if: always()
+      run: |
+        echo "=== Installation Results ==="
+        echo "Method 1 (pip): ${{ steps.poetry-pip.outputs.poetry-pip-success }}"
+        echo "Method 2 (official): ${{ steps.poetry-official.outputs.poetry-official-success }}"
+        echo "Method 3 (chocolatey): ${{ steps.poetry-choco.outputs.poetry-choco-success }}"
+        
+        if ("${{ steps.poetry-pip.outputs.poetry-pip-success }}" -eq "true" -or 
+            "${{ steps.poetry-official.outputs.poetry-official-success }}" -eq "true" -or 
+            "${{ steps.poetry-choco.outputs.poetry-choco-success }}" -eq "true") {
+          echo "🎉 Poetry installation successful!"
+        } else {
+          echo "❌ All Poetry installation methods failed!"
+          exit 1
+        }
+      shell: pwsh

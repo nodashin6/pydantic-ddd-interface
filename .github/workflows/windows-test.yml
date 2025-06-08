@@ -1,0 +1,116 @@
+name: Windows Test
+
+on:
+  push:
+    branches: [ feature/#8-fix-windows-workflow ]
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - '.github/workflows/**'
+      - 'pydddi/**'
+      - 'tests/**'
+      - 'pyproject.toml'
+      - 'poetry.lock'
+
+jobs:
+  windows-test:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    
+    steps:
+    - name: 🔽 Checkout code
+      uses: actions/checkout@v4
+    
+    - name: 🐍 Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.12"
+    
+    - name: 🔧 Install Poetry (Windows specific)
+      run: |
+        pip install poetry
+        poetry --version
+      shell: pwsh
+    
+    - name: 📝 Configure Poetry
+      run: |
+        poetry config virtualenvs.create true
+        poetry config virtualenvs.in-project true
+      shell: pwsh
+    
+    - name: 📦 Cache dependencies
+      uses: actions/cache@v3
+      with:
+        path: .venv
+        key: venv-windows-${{ hashFiles('**/poetry.lock') }}
+        restore-keys: |
+          venv-windows-
+    
+    - name: 🔧 Install dependencies
+      run: |
+        poetry install --no-interaction --verbose
+      shell: pwsh
+    
+    - name: 🧪 Run tests
+      run: |
+        poetry run pytest -v --tb=short
+      shell: pwsh
+    
+    - name: 🎨 Check code formatting
+      run: |
+        poetry run black --check --diff .
+      shell: pwsh
+      continue-on-error: true
+    
+    - name: 🔍 Type checking
+      run: |
+        poetry run mypy pydddi/
+      shell: pwsh
+      continue-on-error: true
+    
+    - name: 📦 Test build
+      run: |
+        poetry build
+        dir dist\
+      shell: pwsh
+    
+    - name: ✅ Test package installation
+      run: |
+        pip install dist\*.whl
+        python -c "
+        import pydddi
+        from pydddi import IEntity, IModel, IUseCase, ICrudRepository  
+        print('✅ Windows package installation successful!')
+        print('🎉 All Windows tests passed!')
+        "
+      shell: pwsh
+    
+    - name: 📊 Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: windows-test-results
+        path: |
+          dist/
+          .coverage
+        retention-days: 7
+
+  windows-summary:
+    runs-on: ubuntu-latest
+    needs: windows-test
+    if: always()
+    steps:
+    - name: 📋 Windows Test Summary
+      run: |
+        if [ "${{ needs.windows-test.result }}" == "success" ]; then
+          echo "🎉 Windows tests passed successfully!"
+          echo "✅ Poetry installation: OK"
+          echo "✅ Dependencies: OK"
+          echo "✅ Tests: OK"
+          echo "✅ Build: OK"
+          echo "✅ Package installation: OK"
+        else
+          echo "❌ Windows tests failed!"
+          echo "Please check the logs above for details."
+          exit 1
+        fi
