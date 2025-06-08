@@ -76,7 +76,9 @@ jobs:
     
     - name: ✅ Test package installation
       run: |
-        pip install dist\*.whl
+        $wheelFile = Get-ChildItem dist\*.whl | Select-Object -First 1
+        pip install $wheelFile.FullName
+        pip install pydantic
         python -c "
         import pydddi
         from pydddi import IEntity, IModel, IUseCase, ICrudRepository  
