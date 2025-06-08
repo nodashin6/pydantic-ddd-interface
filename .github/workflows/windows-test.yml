@@ -27,16 +27,12 @@ jobs:
         python-version: "3.12"
     
     - name: 🔧 Install Poetry (Windows specific)
-      run: |
-        pip install poetry
-        poetry --version
-      shell: pwsh
-    
-    - name: 📝 Configure Poetry
-      run: |
-        poetry config virtualenvs.create true
-        poetry config virtualenvs.in-project true
-      shell: pwsh
+      uses: snok/install-poetry@v1
+      with:
+        version: latest
+        virtualenvs-create: true
+        virtualenvs-in-project: true
+        installer-parallel: true
     
     - name: 📦 Cache dependencies
       uses: actions/cache@v3
