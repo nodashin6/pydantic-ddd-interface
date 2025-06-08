@@ -21,7 +21,7 @@ classifiers = [
 python = "^3.12"
 pydantic = "^2.11.5"
 
-[tool.poetry.dev-dependencies]
+[tool.poetry.group.dev.dependencies]
 pytest = "^8.4.0"
 pytest-cov = "^6.0.0"
 black = "^25.1.0"
