@@ -15,15 +15,7 @@ class IEntity(BaseModel, Generic[TEntityId], ABC):
     and different states. They are defined by their identity, not their attributes.
     """
 
-    def get_id(self) -> TEntityId:
-        """
-        Get the unique identifier of this entity.
-        This method should be implemented by all entity classes.
-
-        Returns:
-            The unique identifier of this entity
-        """
-        raise NotImplementedError("Entity must implement get_id method")
+    id: TEntityId
 
     def __eq__(self, other: Any) -> bool:
         """
@@ -32,10 +24,10 @@ class IEntity(BaseModel, Generic[TEntityId], ABC):
         """
         if not isinstance(other, self.__class__):
             return False
-        return self.get_id() == other.get_id()
+        return self.id == other.id
 
     def __hash__(self) -> int:
         """
         Hash entities based on their identity.
         """
-        return hash((self.__class__, self.get_id()))
+        return hash((self.__class__, self.id))
