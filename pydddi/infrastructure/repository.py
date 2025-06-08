@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import TypeVar, Generic, Optional, Hashable
+from typing import TypeVar, Generic, Optional, Hashable, Any
 from pydantic import BaseModel
 
 from ..domain.entity import IEntity
@@ -128,7 +128,7 @@ class ICrudRepository(
 
     @abstractmethod
     async def select(
-        self, limit: Optional[int] = None, offset: Optional[int] = None, **filters
+        self, limit: Optional[int] = None, offset: Optional[int] = None, **filters: Any
     ) -> list[TEntity]:
         """
         Select multiple records with optional pagination and filtering.
@@ -173,7 +173,7 @@ class IReadRepository(ABC, Generic[TEntity, TReadSchema]):
 
     @abstractmethod
     async def select(
-        self, limit: Optional[int] = None, offset: Optional[int] = None, **filters
+        self, limit: Optional[int] = None, offset: Optional[int] = None, **filters: Any
     ) -> list[TEntity]:
         """
         Select multiple entities with optional pagination and filtering.
@@ -246,7 +246,7 @@ class IReadAggregateRepository(ABC, Generic[TModel, TReadAggregateSchema]):
 
     @abstractmethod
     async def select(
-        self, limit: Optional[int] = None, offset: Optional[int] = None, **filters
+        self, limit: Optional[int] = None, offset: Optional[int] = None, **filters: Any
     ) -> list[TModel]:
         """
         Select multiple aggregate models with optional pagination and filtering.
