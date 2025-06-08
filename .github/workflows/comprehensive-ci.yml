@@ -2,7 +2,7 @@ name: Comprehensive CI
 
 on:
   pull_request:
-    branches: [ main, feature/* ]
+    branches: [ main, feature/#8-fix-windows-workflow ]
   push:
     branches: [ main ]
 
