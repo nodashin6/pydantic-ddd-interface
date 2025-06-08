@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [ main ]
   push:
-    branches: [ main, feature/#8-fix-windows-workflow ]
+    branches: [ main ]
 
 jobs:
   lint-and-format:
