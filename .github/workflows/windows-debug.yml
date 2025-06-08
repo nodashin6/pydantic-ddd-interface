@@ -7,102 +7,118 @@ on:
 jobs:
   windows-debug:
     runs-on: windows-latest
-    timeout-minutes: 20
+    timeout-minutes: 45
     
     steps:
-    - name: 🔽 Checkout
+    - name: 🔽 Checkout code
       uses: actions/checkout@v4
     
-    - name: 🐍 Setup Python
+    - name: 🐍 Set up Python
       uses: actions/setup-python@v5
       with:
         python-version: "3.12"
     
-    - name: 📋 Environment Info
+    - name: 🔧 Update pip and install Poetry
       run: |
-        echo "=== Environment Information ==="
-        python --version
-        pip --version
-        echo "PATH: $env:PATH"
-        echo "USERPROFILE: $env:USERPROFILE"
-        echo "HOME: $env:HOME"
-        Get-Location
+        python -m pip install --upgrade pip
+        pip install poetry==1.8.3
+        poetry --version
+        echo "Poetry installation completed"
       shell: pwsh
     
-    - name: 🔧 Try Poetry Installation Method 1 (pip)
-      id: poetry-pip
-      run: |
-        try {
-          pip install poetry
-          poetry --version
-          echo "poetry-pip-success=true" >> $env:GITHUB_OUTPUT
-        } catch {
-          echo "poetry-pip-success=false" >> $env:GITHUB_OUTPUT
-          echo "Method 1 failed: $_"
-        }
-      shell: pwsh
-      continue-on-error: true
-    
-    - name: 🔧 Try Poetry Installation Method 2 (official installer)
-      id: poetry-official
-      if: steps.poetry-pip.outputs.poetry-pip-success != 'true'
-      run: |
-        try {
-          (Invoke-WebRequest -Uri https://install.python-poetry.org -UseBasicParsing).Content | python -
-          $env:PATH += ";$env:USERPROFILE\AppData\Roaming\Python\Scripts"
-          poetry --version
-          echo "poetry-official-success=true" >> $env:GITHUB_OUTPUT
-        } catch {
-          echo "poetry-official-success=false" >> $env:GITHUB_OUTPUT
-          echo "Method 2 failed: $_"
-        }
-      shell: pwsh
-      continue-on-error: true
-    
-    - name: 🔧 Try Poetry Installation Method 3 (chocolatey)
-      id: poetry-choco
-      if: steps.poetry-pip.outputs.poetry-pip-success != 'true' && steps.poetry-official.outputs.poetry-official-success != 'true'
-      run: |
-        try {
-          choco install poetry -y
-          poetry --version
-          echo "poetry-choco-success=true" >> $env:GITHUB_OUTPUT
-        } catch {
-          echo "poetry-choco-success=false" >> $env:GITHUB_OUTPUT
-          echo "Method 3 failed: $_"
-        }
-      shell: pwsh
-      continue-on-error: true
-    
-    - name: 📦 Configure and Install
-      if: steps.poetry-pip.outputs.poetry-pip-success == 'true' || steps.poetry-official.outputs.poetry-official-success == 'true' || steps.poetry-choco.outputs.poetry-choco-success == 'true'
+    - name: 🛠️ Configure Poetry for Windows
       run: |
         poetry config virtualenvs.create true
         poetry config virtualenvs.in-project true
-        poetry install --no-interaction
+        poetry config --list
       shell: pwsh
     
-    - name: 🧪 Run Basic Test
-      if: steps.poetry-pip.outputs.poetry-pip-success == 'true' || steps.poetry-official.outputs.poetry-official-success == 'true' || steps.poetry-choco.outputs.poetry-choco-success == 'true'
+    - name: 📋 Debug environment
       run: |
-        poetry run python -c "import pydddi; print('✅ Import successful!')"
-        poetry run pytest tests/test_basic.py -v
+        echo "=== Python Information ==="
+        python --version
+        python -c "import sys; print('Python executable:', sys.executable)"
+        echo ""
+        echo "=== Poetry Information ==="
+        poetry --version
+        poetry env info
+        echo ""
+        echo "=== Current Directory ==="
+        Get-Location
+        echo ""
+        echo "=== Files in current directory ==="
+        Get-ChildItem
       shell: pwsh
     
-    - name: 📊 Summary
-      if: always()
+    - name: 🔧 Install dependencies with verbose output
       run: |
-        echo "=== Installation Results ==="
-        echo "Method 1 (pip): ${{ steps.poetry-pip.outputs.poetry-pip-success }}"
-        echo "Method 2 (official): ${{ steps.poetry-official.outputs.poetry-official-success }}"
-        echo "Method 3 (chocolatey): ${{ steps.poetry-choco.outputs.poetry-choco-success }}"
+        echo "Installing dependencies..."
+        poetry install --no-interaction --verbose
+        echo "Installation completed"
+      shell: pwsh
+    
+    - name: 🧪 Run tests with detailed output
+      run: |
+        echo "Running tests..."
+        poetry run python -m pytest -v --tb=short
+        echo "Tests completed"
+      shell: pwsh
+    
+    - name: 📦 Build package with debug
+      run: |
+        echo "Building package..."
+        poetry build --verbose
+        echo ""
+        echo "=== Build artifacts ==="
+        Get-ChildItem dist\ -Recurse
+      shell: pwsh
+    
+    - name: ✅ Test installation with full paths
+      run: |
+        echo "=== Testing package installation ==="
+        $distPath = Resolve-Path "dist"
+        echo "Distribution path: $distPath"
         
-        if ("${{ steps.poetry-pip.outputs.poetry-pip-success }}" -eq "true" -or 
-            "${{ steps.poetry-official.outputs.poetry-official-success }}" -eq "true" -or 
-            "${{ steps.poetry-choco.outputs.poetry-choco-success }}" -eq "true") {
-          echo "🎉 Poetry installation successful!"
+        $wheelFiles = Get-ChildItem "$distPath\*.whl"
+        echo "Found wheel files:"
+        $wheelFiles | ForEach-Object { echo "  - $($_.FullName)" }
+        
+        if ($wheelFiles.Count -gt 0) {
+            $wheelFile = $wheelFiles[0]
+            echo "Installing wheel: $($wheelFile.FullName)"
+            pip install "$($wheelFile.FullName)"
+            
+            echo "Testing import..."
+            python -c "
+            print('=== Import Test ===')
+            try:
+                import pydddi
+                print('✅ pydddi import: SUCCESS')
+                
+                from pydddi import IEntity, IModel, IUseCase, ICrudRepository
+                print('✅ Interface imports: SUCCESS')
+                
+                print('🎉 All Windows imports successful!')
+                print('📦 Package location:', pydddi.__file__ if hasattr(pydddi, '__file__') else 'unknown')
+            except Exception as e:
+                print('❌ Import failed:', str(e))
+                import traceback
+                traceback.print_exc()
+                exit(1)
+            "
         } else {
-          echo "❌ All Poetry installation methods failed!"
-          exit 1
+            echo "❌ No wheel files found!"
+            exit 1
         }
+      shell: pwsh
+    
+    - name: 📊 Final summary
+      run: |
+        echo "🎉 Windows debug test completed successfully!"
+        echo "✅ Poetry: OK"
+        echo "✅ Dependencies: OK" 
+        echo "✅ Tests: OK"
+        echo "✅ Build: OK"
+        echo "✅ Installation: OK"
+        echo "✅ Imports: OK"
       shell: pwsh
