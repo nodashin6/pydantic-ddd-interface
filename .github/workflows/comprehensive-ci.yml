@@ -103,11 +103,11 @@ jobs:
       run: |
         pip install dist/*.whl
         python -c "
-import pydddi
-from pydddi import IEntity, IModel, IUseCase, ICrudRepository
-print('✅ Package installed and imports work correctly')
-print(f'📦 Package version: {pydddi.__version__ if hasattr(pydddi, \"__version__\") else \"unknown\"}')
-"
+        import pydddi
+        from pydddi import IEntity, IModel, IUseCase, ICrudRepository
+        print('✅ Package installed and imports work correctly')
+        print(f'📦 Package version: {pydddi.__version__ if hasattr(pydddi, \"__version__\") else \"unknown\"}')
+        "
     
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4

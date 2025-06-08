@@ -66,16 +66,16 @@ jobs:
         echo "✅ Testing package installation..."
         pip install dist/*.whl
         python -c "
-import sys
-try:
-    import pydddi
-    from pydddi import IEntity, IModel, IUseCase, ICrudRepository
-    print('🎉 All imports successful!')
-    print('✅ PR is ready for merge')
-except ImportError as e:
-    print(f'❌ Import error: {e}')
-    sys.exit(1)
-"
+        import sys
+        try:
+            import pydddi
+            from pydddi import IEntity, IModel, IUseCase, ICrudRepository
+            print('🎉 All imports successful!')
+            print('✅ PR is ready for merge')
+        except ImportError as e:
+            print(f'❌ Import error: {e}')
+            sys.exit(1)
+        "
 
   summary:
     runs-on: ubuntu-latest
